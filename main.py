@@ -1,21 +1,28 @@
 import typer
 from commands.log import Log
+from typing import Optional
+from commands.invoker import CommandInvoker
+
+
 app = typer.Typer()
+typer.Option()
 
+@app.command()
+def create_log(username: str = "user", file_path="C:/", extension='.log', balance: Optional[float] = None,
+               set_date: str = None,
+               title: Optional[str] = None,
+               clean: bool = True
+               ):
+    _user_data = [username, balance, title]
+    log_command = Log(path=file_path, extension=extension, user_data=_user_data, clean=clean)
+    command_invoker = CommandInvoker()
+    command_invoker.set_command(log_command)
+    command_invoker.execute_command()
 
 
 @app.command()
-def create_log(username: str, file_path="C:/", extension='.log'):
-    command = Log(username=username, path=file_path, extension=extension)
-    command.execute()
-
-
-@app.command()
-def goodbye(name: str, formal: bool = False):
-    if formal:
-        print(f"Goodbye Ms. {name}. Have a good day.")
-    else:
-        print(f"Bye {name}!")
+def goodbye():
+    print("Goodbye!")
 
 
 if __name__ == "__main__":

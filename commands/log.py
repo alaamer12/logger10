@@ -7,14 +7,21 @@ import subprocess
 import time
 import tempfile
 import datetime
+from rich import table
+from rich.console import Console
 
+today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
 
 class Log(ICommand):
 
-    def __init__(self, username: str, path: str = "C:/", extension: str = '.log'):
-        self.username = username
+    def __init__(self, path: str = "C:/", extension: str = '.log', user_data: Optional[list] = None,
+                 date: str = today,
+                 clean: bool = True):
+        self.clean = clean
+        self.user_data = user_data
         self.path = path
         self.extension = extension
+        self.today = date
 
     def __del__(self):
         pass
@@ -69,16 +76,15 @@ class Log(ICommand):
 
     def create_log_file(self, path, extension) -> Optional[str]:
         # Get everyday date
-        today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
         log_dir = os.path.join(path, 'logs')
         # Create the logs directory if it doesn't exist
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         try:
-            log_file = os.path.join(log_dir, f'{today}{extension}')
+            log_file = os.path.join(log_dir, f'{self.today}{extension}')
             # Create a log file with the content from tempfile
             _content = self.edit_tempfile()
-            print(_content)
+            _modified_content = self.format_log(_content)
             with open(log_file, 'w') as f:
                 f.write(_content)
             return log_file
@@ -96,10 +102,21 @@ class Log(ICommand):
         except:
             pass
 
-    def format_log(self):
-        pass
+    def generate_id(self):
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))[:2]
+
+    # TODO:
+    def format_log(self, content: str):
+        time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+        x = '"' * 50 + self.today + '"' * 50
+        userdata = x + "\t000\t"
+        for datum in self.user_data:
+            userdata = f"\t[{time}]\t{datum}"
+        modified_content = userdata + "\n\n" + content + "\n" + x
+        return modified_content
 
     def execute(self) -> Optional[str]:
         log_file: Optional[str] = self.create_log_file(self.path, self.extension)
-        self.clean_tempfiles()
+        if self.clean:
+            self.clean_tempfiles()
         return log_file
