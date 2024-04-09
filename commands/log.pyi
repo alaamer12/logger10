@@ -4,6 +4,12 @@ from typing import Optional
 class Log(ICommand):
     def __init__(self, username: str, path: str = "C:/", extension: str = '.log', user_data: Optional[list] = None,
                  clean: bool = True):
+
+        self.path = None
+        self.extension = None
+        self.__tempdir = None
+        self.today = Optional[str]
+        self.user_data = Optional[list]
         self.clean = clean
 
     def __del__(self):

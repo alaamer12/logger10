@@ -1,30 +1,32 @@
 from .base_command import ICommand
 from typing import Optional
-import string
-import random
+# import string
+# import random
 import os
 import subprocess
 import time
 import tempfile
 import datetime
-from rich import table
-from rich.console import Console
+# from rich import table
+# from rich.console import Console
 
 today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
+
 
 class Log(ICommand):
 
     def __init__(self, path: str = "C:/", extension: str = '.log', user_data: Optional[list] = None,
                  date: str = today,
-                 clean: bool = True):
+                 clean: bool = True,
+                 override: bool = False
+                 ):
         self.clean = clean
         self.user_data = user_data
         self.path = path
         self.extension = extension
         self.today = date
-
-    def __del__(self):
-        pass
+        self.__tempdir = None
+        self.override = override
 
     def create_tempfile(self) -> Optional[str]:
         tempdir_path = tempfile.gettempdir()
@@ -65,14 +67,15 @@ class Log(ICommand):
             print(e)
             return None
 
-    def has_tempfile_edited(self, file_path, last_checked_time) -> bool:
+    @staticmethod
+    def has_tempfile_edited(file_path, last_checked_time) -> bool:
         try:
             if not os.path.exists(file_path):
                 raise Exception(f"File {file_path} does not exist")
             return os.path.getmtime(file_path) > last_checked_time
-        except:
+        except Exception as e:
             print("has_tempfile_edited error")
-            pass
+            print(e)
 
     def create_log_file(self, path, extension) -> Optional[str]:
         # Get everyday date
@@ -84,13 +87,14 @@ class Log(ICommand):
             log_file = os.path.join(log_dir, f'{self.today}{extension}')
             # Create a log file with the content from tempfile
             _content = self.edit_tempfile()
+
+            # Format the log content and write it to the log file
             _modified_content = self.format_log(_content)
             with open(log_file, 'w') as f:
-                f.write(_content)
+                f.write(_modified_content)
             return log_file
         except Exception as e:
-            print(e)
-            return None
+            raise e
 
     def clean_tempfiles(self):
         try:
@@ -99,24 +103,28 @@ class Log(ICommand):
             if os.path.exists(self.__tempdir) and not len(__tempfiles) == 0:
                 for file in __tempfiles:
                     os.remove(os.path.join(self.__tempdir, file))
-        except:
+        except Exception as e:
+            print(e)
             pass
 
-    def generate_id(self):
-        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))[:2]
+    # def generate_id(self):
+    #     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))[:2]
 
     # TODO:
     def format_log(self, content: str):
-        time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-        x = '"' * 50 + self.today + '"' * 50
-        userdata = x + "\t000\t"
-        for datum in self.user_data:
-            userdata = f"\t[{time}]\t{datum}"
-        modified_content = userdata + "\n\n" + content + "\n" + x
+        the_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+        # u = '-' * 100
+        x = 'x' * 45 + (self.today or '') + 'x' * 45
+        # w = '-' * 100
+        # z = u + '\n' + x + '\n' + w
+        user_data_parts = [part if part is not None else '' for part in self.user_data]
+        userdata = "[" + the_time + "]\t" + "\t".join(user_data_parts)
+        modified_content = userdata + "\n\n" + content + "\n\n" + x  # Or z
         return modified_content
 
     def execute(self) -> Optional[str]:
         log_file: Optional[str] = self.create_log_file(self.path, self.extension)
         if self.clean:
             self.clean_tempfiles()
+        print(f"Log file created: {log_file}")
         return log_file

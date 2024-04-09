@@ -7,14 +7,15 @@ from commands.invoker import CommandInvoker
 app = typer.Typer()
 typer.Option()
 
-@app.command()
+@app.command(name="log")
 def create_log(username: str = "user", file_path="C:/", extension='.log', balance: Optional[float] = None,
                set_date: str = None,
                title: Optional[str] = None,
-               clean: bool = True
+               clean: bool = True,
+               override: bool = False
                ):
     _user_data = [username, balance, title]
-    log_command = Log(path=file_path, extension=extension, user_data=_user_data, clean=clean)
+    log_command = Log(path=file_path, extension=extension, user_data=_user_data, clean=clean, override=override)
     command_invoker = CommandInvoker()
     command_invoker.set_command(log_command)
     command_invoker.execute_command()
